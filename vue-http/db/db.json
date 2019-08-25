@@ -3,17 +3,19 @@
     {
       "id": 1,
       "titulo": "Aprender JavaScript",
-      "concluido": true
+      "concluido": false
     },
     {
-      "id": 2,
       "titulo": "Aprender Vue",
-      "concluido": true
+      "concluido": true,
+      "id": 2,
+      "curso": "Vue"
     },
     {
       "titulo": "Aprender VueX",
       "concluido": false,
-      "id": 4
+      "id": 4,
+      "curso": "Vue"
     },
     {
       "titulo": "Angular 8 é melhor",

@@ -13,7 +13,7 @@
                 </button>
             </div>
         </div>
-        <ul class="list-group" v-if="tarefas.length > 0">
+        <ul class="list-group" v-if="tarefasOrdenadas.length > 0">
             <TarefasListaIten
                 v-for="tarefa in tarefasOrdenadas"
                 :key="tarefa.id"
@@ -22,7 +22,8 @@
                 @deletar="deletarTarefa"
                 @concluir="editarTarefa" />
         </ul>
-        <p v-else>Nenhuma tarefa criada.</p>
+        <p v-else-if="!mensagemErro">Nenhuma tarefa criada.</p>
+        <div class="alert alert-danger" v-else>{{ mensagemErro }}</div>
 
         <TarefaSalvar 
             v-if="exibirFormulario"
@@ -38,8 +39,9 @@
 import TarefaSalvar from './TarefaSalvar.vue'
 import TarefasListaIten from './TarefasListaIten.vue'
 
-import env from './../env/env';
-import axios from 'axios';
+// import env from './../env/env';
+// import axios from 'axios';
+import axios from './../axios';
 
 
 export default {
@@ -51,14 +53,33 @@ export default {
         return {
             tarefas: [],
             exibirFormulario: false,
-            tarefaSelecionada: undefined
+            tarefaSelecionada: undefined,
+            mensagemErro: undefined
         }
     },
     created() {
-        axios.get(`${env.apiURL}/tarefas`).then((response) => {
+        // ${env.apiURL} - remvida deantes da barra
+        axios.get(`tarefas`).then((response) => {
             console.log(' GET :::: ', response.data);
             this.tarefas = response.data;
-        });
+        }
+        // , e => {
+        //     if (e.response) {
+        //         this.mensagemErro = `Erro do servidor ${e.message} - ${e.response.status}`;
+        //     } else if (e.request) {
+        //         this.mensagemErro = `Erro ao tentar se comunicar com o servidor: ${e.message} - ${e.response.status}`;                
+        //     }
+        //     return Promise.reject(e);
+        // }
+        ).catch(e => {
+            if (e.response) {
+                this.mensagemErro = `Erro do servidor ${e.message} - ${e.response.status}`;
+            } else if (e.request) {
+                this.mensagemErro = `Erro ao tentar se comunicar com o servidor: ${e.message} - ${e.response.status}`;                
+            } else {
+                this.mensagemErro = `Erro ao tentar se comunicar...`;
+            }
+        })
     },
     computed: {
         tarefasOrdenadas() {
@@ -73,7 +94,18 @@ export default {
     },
     methods: {
         criarTarefa(tarefa) {
-            axios.post(`${env.apiURL}/tarefas`, tarefa).then((response) => {
+            // axios.post(`${env.apiURL}/tarefas`, tarefa).then((response) => {
+            //     console.log(' POST :::: ', response.data);
+            //     this.tarefas.push(response.data);
+            //     this.resetar();
+            // });
+
+            axios.request({
+                method: 'post',
+                baseURL: env.apiURL, 
+                url: '/tarefas',
+                data: tarefa
+            }).then((response) => {
                 console.log(' POST :::: ', response.data);
                 this.tarefas.push(response.data);
                 this.resetar();
@@ -85,7 +117,7 @@ export default {
         },
         editarTarefa(tar) {
             console.log('PUT ::: ', tar);   
-            axios.put(`${env.apiURL}/tarefas/${tar.id}`, tar).then((response) => {
+            axios.put(`/tarefas/${tar.id}`, tar).then((response) => {
                 console.log(' PUT :::: ', response.data);
                 // this.tarefas.push(response);
                 const indice = this.tarefas.findIndex(x => x.id === tar.id);
@@ -97,14 +129,25 @@ export default {
             this.tarefaSelecionada = undefined;
             this.exibirFormulario = false;
         },
-        deletarTarefa(tar) {
+        async deletarTarefa(tar) {
             const confirmar = window.confirm(`Deseja deletar a Tarefa ${tar.titulo}`);
             if (confirmar) {
-                axios.delete(`${env.apiURL}/tarefas/${tar.id}`, tar).then(response => {
-                    console.log(' DELETE :::: ');
+                // axios.delete(`/tarefas/${tar.id}`, tar).then(response => {
+                //     console.log(' DELETE :::: ');
+                //     const indice = this.tarefas.findIndex(x => x.id === tar.id);
+                //     this.tarefas.splice(indice, 1);
+                // });
+
+                // para tratar erro usar try-catch
+                try {
+                    const response = await axios.delete(`/tarefas/${tar.id}`, tar);
                     const indice = this.tarefas.findIndex(x => x.id === tar.id);
-                    this.tarefas.splice(indice, 1);
-                });
+                    this.tarefas.splice(indice, 1);                    
+                } catch (e) {
+                    console.log(' data error ', e);
+                } finally {
+                    console.log(' final .... ');
+                }
             }
         },
         showForm(event) {
